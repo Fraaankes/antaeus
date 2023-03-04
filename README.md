@@ -104,6 +104,8 @@ Happy hacking 😁!
 * Introducing scheduling in this app seems wrong, and should be handled somewhere else
   * Especially given an invoice doesn't contain a payment date in this system, so after inserting it, it will be attempted paid on the next run
 
+A couple of solutions could be [AWS EventBridge](https://aws.amazon.com/blogs/compute/introducing-amazon-eventbridge-scheduler/) or Azure Logic Apps, or maybe just a CRON job somewhere
+
 * The scheduler needs a way to start the process
   * Adding an endpoint would allow that
 
@@ -117,9 +119,24 @@ Happy hacking 😁!
 
 ### Implementation
 
-Introducing a queue would allow for the scaling out of processing.
-Allowing transient failures to be handled by a visibility timeout + retry count.
-By adding a custom retry strategy, we can decide exception types to retry
-Does not solve scaling the api service beyond 1 server.
+I added a couple of things to solve the problem:
+A queue to allow for the scaling out of processing of invoices and their payment.
+It will allow transient failures to be handled, by having a visibility timeout + retry count and when exceeded will push the messages to a deadletter queue, for _something_ to handle them later.
+By adding a custom retry strategy, the decision of which exception types to retry can be decided.
 
 
+It does not solve scaling the api service beyond 1 server, which would require some form of database locking mechanism.
+
+
+## Running
+
+Using docker-compose, the app can by run by running the following cmd:
+
+`> docker-compose up --build`
+
+in your favorite terminal
+
+followed by a request to `POST http://localhost:7000/rest/v1/billing/start` to kick off the process
+
+## Flow diagram
+Beautiful in paint 
