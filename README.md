@@ -96,3 +96,30 @@ The code given is structured as follows. Feel free however to modify the structu
 * [Sqlite3](https://sqlite.org/index.html) - Database storage engine
 
 Happy hacking 😁!
+
+## Potential Solution
+
+### Initial requirements / design considerations
+ 
+* Introducing scheduling in this app seems wrong, and should be handled somewhere else
+  * Especially given an invoice doesn't contain a payment date in this system, so after inserting it, it will be attempted paid on the next run
+
+* The scheduler needs a way to start the process
+  * Adding an endpoint would allow that
+
+* There will potentially be a lot of invoices so scaling could be a concern
+  * We need some kind of scalable process talking to the potentially slow 3rd party billing provider in parallel
+    * As a note this then means running multiple instances of the api app is not possible as there is no DB synchronization of already read+scheduled rows
+    * Transient failures should be retried
+
+* Lack of funds on a customer should put an invoice into a failed state.
+
+
+### Implementation
+
+Introducing a queue would allow for the scaling out of processing.
+Allowing transient failures to be handled by a visibility timeout + retry count.
+By adding a custom retry strategy, we can decide exception types to retry
+Does not solve scaling the api service beyond 1 server.
+
+
