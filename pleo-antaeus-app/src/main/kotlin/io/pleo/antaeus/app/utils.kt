@@ -1,3 +1,4 @@
+import io.pleo.antaeus.core.exceptions.NetworkException
 import io.pleo.antaeus.core.external.PaymentProvider
 import io.pleo.antaeus.data.AntaeusDal
 import io.pleo.antaeus.models.Currency
@@ -31,6 +32,9 @@ internal fun setupInitialData(dal: AntaeusDal) {
 internal fun getPaymentProvider(): PaymentProvider {
     return object : PaymentProvider {
         override fun charge(invoice: Invoice): Boolean {
+            if (Random.nextInt(1, 5) == 1){
+                throw NetworkException()
+            }
             return Random.nextBoolean()
         }
     }
