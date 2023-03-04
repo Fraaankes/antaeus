@@ -92,7 +92,7 @@ class AntaeusRest(
                     path("billing") {
                         // URL: /rest/v1/billing/start
                         post("start") {
-                            billingService.start()
+                            billingService.startProcessing()
                             it.status(202)
                         }
                     }
