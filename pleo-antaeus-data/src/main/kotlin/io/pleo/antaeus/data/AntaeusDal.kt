@@ -13,6 +13,7 @@ import io.pleo.antaeus.models.Invoice
 import io.pleo.antaeus.models.InvoiceStatus
 import io.pleo.antaeus.models.Money
 import org.jetbrains.exposed.sql.Database
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.selectAll
@@ -23,26 +24,21 @@ class AntaeusDal(private val db: Database) {
         // transaction(db) runs the internal query as a new database transaction.
         return transaction(db) {
             // Returns the first invoice with matching id.
-            InvoiceTable
-                .select { InvoiceTable.id.eq(id) }
-                .firstOrNull()
-                ?.toInvoice()
+            InvoiceTable.select { InvoiceTable.id.eq(id) }.firstOrNull()?.toInvoice()
         }
     }
 
-    fun fetchInvoices(): List<Invoice> {
+    fun fetchInvoices(status: InvoiceStatus?): List<Invoice> {
         return transaction(db) {
-            InvoiceTable
-                .selectAll()
-                .map { it.toInvoice() }
+            (if (status == null) InvoiceTable.selectAll()
+            else InvoiceTable.select { InvoiceTable.status.eq(status.toString()) }).map { it.toInvoice() }
         }
     }
 
     fun createInvoice(amount: Money, customer: Customer, status: InvoiceStatus = InvoiceStatus.PENDING): Invoice? {
         val id = transaction(db) {
             // Insert the invoice and returns its new id.
-            InvoiceTable
-                .insert {
+            InvoiceTable.insert {
                     it[this.value] = amount.value
                     it[this.currency] = amount.currency.toString()
                     it[this.status] = status.toString()
@@ -55,18 +51,13 @@ class AntaeusDal(private val db: Database) {
 
     fun fetchCustomer(id: Int): Customer? {
         return transaction(db) {
-            CustomerTable
-                .select { CustomerTable.id.eq(id) }
-                .firstOrNull()
-                ?.toCustomer()
+            CustomerTable.select { CustomerTable.id.eq(id) }.firstOrNull()?.toCustomer()
         }
     }
 
     fun fetchCustomers(): List<Customer> {
         return transaction(db) {
-            CustomerTable
-                .selectAll()
-                .map { it.toCustomer() }
+            CustomerTable.selectAll().map { it.toCustomer() }
         }
     }
 
