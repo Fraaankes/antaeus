@@ -1,4 +1,3 @@
-
 import io.pleo.antaeus.core.external.PaymentProvider
 import io.pleo.antaeus.data.AntaeusDal
 import io.pleo.antaeus.models.Currency
@@ -7,6 +6,7 @@ import io.pleo.antaeus.models.InvoiceStatus
 import io.pleo.antaeus.models.Money
 import java.math.BigDecimal
 import kotlin.random.Random
+import io.pleo.antaeus.core.external.MessageHub
 
 // This will create all schemas and setup initial data
 internal fun setupInitialData(dal: AntaeusDal) {
@@ -20,11 +20,8 @@ internal fun setupInitialData(dal: AntaeusDal) {
         (1..10).forEach {
             dal.createInvoice(
                 amount = Money(
-                    value = BigDecimal(Random.nextDouble(10.0, 500.0)),
-                    currency = customer.currency
-                ),
-                customer = customer,
-                status = if (it == 1) InvoiceStatus.PENDING else InvoiceStatus.PAID
+                    value = BigDecimal(Random.nextDouble(10.0, 500.0)), currency = customer.currency
+                ), customer = customer, status = if (it == 1) InvoiceStatus.PENDING else InvoiceStatus.PAID
             )
         }
     }
@@ -34,7 +31,13 @@ internal fun setupInitialData(dal: AntaeusDal) {
 internal fun getPaymentProvider(): PaymentProvider {
     return object : PaymentProvider {
         override fun charge(invoice: Invoice): Boolean {
-                return Random.nextBoolean()
+            return Random.nextBoolean()
         }
     }
+}
+
+internal fun setupQueues(messageHub: MessageHub) {
+    val channel = messageHub.getChannel();
+    channel.queueDeclare(messageHub.INVOICE_QUEUE, false, false, false, null)
+    channel.queueDeclare(messageHub.INVOICE_DEADLETTER_QUEUE, false, false, false, null)
 }

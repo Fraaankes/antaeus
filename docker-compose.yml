@@ -1,0 +1,20 @@
+services:
+  pleo-antaeus:
+    build: .
+    ports:
+      - "7000:7000"
+    volumes:
+      - "pleo-antaeus-build-cache:/root/.gradle"
+    environment:
+      - RABBITMQ_HOST=rabbit-mq
+    depends_on:
+      - rabbit-mq
+
+  rabbit-mq:
+    image: rabbitmq:3-management
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+
+volumes:
+  pleo-antaeus-build-cache:

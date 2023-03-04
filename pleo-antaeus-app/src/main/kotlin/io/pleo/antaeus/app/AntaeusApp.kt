@@ -8,6 +8,8 @@
 package io.pleo.antaeus.app
 
 import getPaymentProvider
+import io.pleo.antaeus.core.external.MessageHub
+import io.pleo.antaeus.core.external.QueueConnectionFactory
 import io.pleo.antaeus.core.services.BillingService
 import io.pleo.antaeus.core.services.CustomerService
 import io.pleo.antaeus.core.services.InvoiceService
@@ -22,6 +24,7 @@ import org.jetbrains.exposed.sql.addLogger
 import org.jetbrains.exposed.sql.transactions.TransactionManager
 import org.jetbrains.exposed.sql.transactions.transaction
 import setupInitialData
+import setupQueues
 import java.io.File
 import java.sql.Connection
 
@@ -32,10 +35,12 @@ fun main() {
     val dbFile: File = File.createTempFile("antaeus-db", ".sqlite")
     // Connect to the database and create the needed tables. Drop any existing data.
     val db = Database
-        .connect(url = "jdbc:sqlite:${dbFile.absolutePath}",
+        .connect(
+            url = "jdbc:sqlite:${dbFile.absolutePath}",
             driver = "org.sqlite.JDBC",
             user = "root",
-            password = "")
+            password = ""
+        )
         .also {
             TransactionManager.manager.defaultIsolationLevel = Connection.TRANSACTION_SERIALIZABLE
             transaction(it) {
@@ -53,6 +58,11 @@ fun main() {
     // Insert example data in the database.
     setupInitialData(dal = dal)
 
+    val queueHost = System.getenv("RABBITMQ_HOST")
+    val connection = QueueConnectionFactory(queueHost).getConnection()
+    val messageHub = MessageHub(connection)
+    setupQueues(messageHub)
+
     // Get third parties
     val paymentProvider = getPaymentProvider()
 
@@ -61,11 +71,20 @@ fun main() {
     val customerService = CustomerService(dal = dal)
 
     // This is _your_ billing service to be included where you see fit
-    val billingService = BillingService(paymentProvider = paymentProvider)
+    val billingService =
+        BillingService(
+            messageHub = messageHub,
+            invoiceService = invoiceService,
+            paymentProvider = paymentProvider
+        )
 
     // Create REST web service
     AntaeusRest(
         invoiceService = invoiceService,
-        customerService = customerService
+        customerService = customerService,
+        billingService = billingService
     ).run()
+
 }
+
+
