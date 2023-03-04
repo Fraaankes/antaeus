@@ -139,4 +139,7 @@ in your favorite terminal
 followed by a request to `POST http://localhost:7000/rest/v1/billing/start` to kick off the process
 
 ## Flow diagram
-Beautiful in paint 
+Beautifully made in paint :) 
+
+![Untitled](https://user-images.githubusercontent.com/15279743/222915106-ed0cc49d-a994-450d-ba79-82e4fc6f0165.png)
+
